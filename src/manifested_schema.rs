@@ -4,13 +4,7 @@ use crate::{
     CoreApi, DatabaseType, DockerConnectionInfo, DockerStepProvider, ImplicitDockerStepPosition,
     Location, TableConstraintType,
 };
-use crate::haml_parser::{
-    ColumnDefault, ColumnType, ParsedColumn, ParsedColumnPipeline, ParsedConstraint,
-    ParsedDb, ParsedDockerStep, ParsedDocument, ParsedEndpoint,
-    ParsedEndpointResponse, ParsedEndpointWebsocket,
-    ParsedEnv, ParsedGraphQL, ParsedHypi, ParsedJob, ParsedKeyValuePair, ParsedMapping, ParsedMeta
-    , ParsedRest, ParsedSchema, ParsedTable, WellKnownType,
-};
+use crate::haml_parser::{ColumnDefault, ColumnType, ParsedColumn, ParsedColumnPipeline, ParsedConstraint, ParsedDb, ParsedDockerStep, ParsedDocument, ParsedEndpoint, ParsedEndpointResponse,  ParsedEnv, ParsedGraphQL, ParsedHypi, ParsedJob, ParsedKeyValuePair, ParsedMapping, ParsedMeta, ParsedPipeline, ParsedRest, ParsedSchema, ParsedTable, WellKnownType};
 
 #[derive(Clone, Debug)]
 pub struct DocumentDef {
@@ -22,6 +16,7 @@ pub struct DocumentDef {
     pub graphql: Option<GraphQLApiDef>,
     pub jobs: Vec<JobDef>,
     pub databases: Vec<DatabaseDef>,
+    pub pipelines: Vec<Pipeline>,
     pub env: Vec<EnvVar>,
     pub step_builders: Vec<DockerConnectionInfo>,
     pub meta: MetaDef,
@@ -43,6 +38,10 @@ impl From<&ParsedDocument> for DocumentDef {
                 .as_ref()
                 .map(|v| (&*v.borrow()).core_apis.clone())
                 .unwrap_or_else(|| vec![]),
+            pipelines: (&*apis.pipelines.borrow())
+                .iter()
+                .map(|v| (&*v.borrow()).into())
+                .collect(),
             rest: apis.rest.as_ref().map(|v| (&*v.borrow()).into()),
             graphql: apis.graphql.as_ref().map(|v| (&*v.borrow()).into()),
             jobs: (&*apis.jobs.borrow())
@@ -197,7 +196,6 @@ pub struct EndpointDef {
     ///The name of the pipeline which is executed when this endpoint is called
     pub pipeline: Option<String>,
     pub responses: Vec<ResponseDef>,
-    pub websockets: Vec<WebsocketDef>,
 }
 
 impl From<&ParsedEndpoint> for EndpointDef {
@@ -214,11 +212,6 @@ impl From<&ParsedEndpoint> for EndpointDef {
             pipeline: value.pipeline.clone(),
             responses: value
                 .responses
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
-            websockets: value
-                .websockets
                 .iter()
                 .map(|v| (&*v.borrow()).into())
                 .collect(),
@@ -252,26 +245,6 @@ impl From<&ParsedEndpointResponse> for ResponseDef {
                 .iter()
                 .map(|v| (&*v.borrow()).into())
                 .collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct WebsocketDef {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub base: String,
-    pub sources: Vec<String>,
-}
-
-impl From<&ParsedEndpointWebsocket> for WebsocketDef {
-    fn from(value: &ParsedEndpointWebsocket) -> Self {
-        WebsocketDef {
-            start_pos: value.start_pos.clone(),
-            end_pos: value.end_pos.clone(),
-            //mappings: value.mappings.iter().map(|v|(&*v.borrow()).into()).collect(),
-            base: value.base.clone(),
-            sources: value.sources.clone(),
         }
     }
 }
@@ -477,6 +450,33 @@ impl From<&ParsedMapping> for Mapping {
             typ: value.typ.clone(),
             children: value
                 .children
+                .iter()
+                .map(|v| (&*v.borrow()).into())
+                .collect(),
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub struct Pipeline {
+    pub start_pos: Location,
+    pub end_pos: Location,
+    pub name: String,
+    pub label: Option<String>,
+    pub steps: Vec<DockerStep>,
+    pub is_async: bool,
+}
+
+impl From<&ParsedPipeline> for Pipeline {
+    fn from(value: &ParsedPipeline) -> Self {
+        Pipeline {
+            start_pos: value.start_pos.clone(),
+            end_pos: value.end_pos.clone(),
+            name: value.name.to_owned(),
+            label: value.label.to_owned(),
+            is_async: value.is_async,
+            steps: value
+                .steps
+                .borrow()
                 .iter()
                 .map(|v| (&*v.borrow()).into())
                 .collect(),

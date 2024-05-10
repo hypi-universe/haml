@@ -20,5 +20,4 @@ A websocket endpoint has an event object like this:
         Whatever output comes from the pipeline is emitted as a WebSocket message.
         For example, the raw event is not very useful, but a pipeline script could use it to run a query and emit the results of the query.
     -->
-    <websocket source="crud.*|rest.create_team"/>
 </endpoint>

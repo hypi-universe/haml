@@ -81,12 +81,8 @@ const EL_DB: &str = "db";
 const EL_SCHEMA: &str = "schema";
 const EL_ENV: &str = "env";
 const EL_SQL: &str = "sql";
-const EL_FN: &str = "fn";
 const EL_STEP: &str = "step";
 const EL_STEP_BUILDER: &str = "step-builder";
-const EL_WEBSOCKET: &str = "websocket";
-const EL_SCRIPT: &str = "script";
-const EL_CALL: &str = "call";
 const EL_GRAPHQL: &str = "graphql";
 const EL_JOB: &str = "job";
 const EL_META: &str = "meta";
@@ -114,9 +110,7 @@ const ATTR_USERNAME: &str = "username";
 const ATTR_PASSWORD: &str = "password";
 const ATTR_OPTIONS: &str = "options";
 const ATTR_ASYNC: &str = "async";
-const ATTR_DB: &str = "db";
 const ATTR_LABEL: &str = "label";
-const ATTR_SOURCE: &str = "source";
 const ATTR_BASE: &str = "base";
 // const ATTR_TABLE: &str = "table";
 // const ATTR_COLUMN: &str = "column";
@@ -135,7 +129,6 @@ const ATTR_ENABLE_SUBSCRIPTIONS: &str = "enable-subscriptions";
 const ATTR_TO: &str = "to";
 // const ATTR_JOIN: &str = "join";
 const ATTR_IMPORT: &str = "import";
-const ATTR_TARGET: &str = "target";
 const ATTR_PATH: &str = "path";
 const ATTR_PRODUCES: &str = "produces";
 const ATTR_ACCEPTS: &str = "accepts";
@@ -153,7 +146,6 @@ const ATTR_END: &str = "end";
 const ATTR_ENABLED: &str = "enabled";
 const ATTR_REPEATS: &str = "repeats";
 const ATTR_METHOD: &str = "method";
-const ATTR_VERSION: &str = "version";
 const ATTR_PROVIDER: &str = "provider";
 const ATTR_BEFORE: &str = "before";
 const ATTR_AFTER: &str = "after";
@@ -279,13 +271,8 @@ pub enum ParsedHypiSchemaElement {
     ApiRest(NodePtr<ParsedRest>),
     ApiEndpoint(NodePtr<ParsedEndpoint>),
     ApiEndpointResponse(NodePtr<ParsedEndpointResponse>),
-    ApiEndpointSql(NodePtr<ParsedEndpointSql>),
-    ApiEndpointScript(NodePtr<ParsedEndpointScript>),
-    ApiEndpointCall(NodePtr<ParsedCall>),
-    ApiEndpointFn(NodePtr<ParsedEndpointFn>),
     DockerStep(NodePtr<ParsedDockerStep>),
     DockerStepBuilder(NodePtr<DockerConnectionInfo>),
-    ApiEndpointWebsocket(NodePtr<ParsedEndpointWebsocket>),
     ApiGraphQL(NodePtr<ParsedGraphQL>),
     ApiJob(NodePtr<ParsedJob>),
     Pipeline(NodePtr<ParsedPipeline>),
@@ -346,25 +333,10 @@ impl ParsedHypiSchemaElement {
                 node.borrow_mut().set_attr(ctx, key, value)
             }
             ParsedHypiSchemaElement::Pipeline(node) => node.borrow_mut().set_attr(ctx, key, value),
-            ParsedHypiSchemaElement::ApiEndpointScript(node) => {
-                node.borrow_mut().set_attr(ctx, key, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointCall(node) => {
-                node.borrow_mut().set_attr(ctx, key, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointSql(node) => {
-                node.borrow_mut().set_attr(ctx, key, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointFn(node) => {
-                node.borrow_mut().set_attr(ctx, key, value)
-            }
             ParsedHypiSchemaElement::DockerStep(node) => {
                 node.borrow_mut().set_attr(ctx, key, value)
             }
             ParsedHypiSchemaElement::DockerStepBuilder(node) => {
-                node.borrow_mut().set_attr(ctx, key, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(node) => {
                 node.borrow_mut().set_attr(ctx, key, value)
             }
             ParsedHypiSchemaElement::Env(node) => node.borrow_mut().set_attr(ctx, key, value),
@@ -426,23 +398,8 @@ impl ParsedHypiSchemaElement {
                 // node.borrow_mut().append_child(ctx, child)
                 Ok(())
             }
-            ParsedHypiSchemaElement::ApiEndpointScript(node) => {
-                node.borrow_mut().append_child(ctx, child)
-            }
-            ParsedHypiSchemaElement::ApiEndpointCall(node) => {
-                node.borrow_mut().append_child(ctx, child)
-            }
             ParsedHypiSchemaElement::Pipeline(node) => node.borrow_mut().append_child(ctx, child),
             ParsedHypiSchemaElement::ApiEndpointResponse(node) => {
-                node.borrow_mut().append_child(ctx, child)
-            }
-            ParsedHypiSchemaElement::ApiEndpointSql(node) => {
-                node.borrow_mut().append_child(ctx, child)
-            }
-            ParsedHypiSchemaElement::ApiEndpointFn(node) => {
-                node.borrow_mut().append_child(ctx, child)
-            }
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(node) => {
                 node.borrow_mut().append_child(ctx, child)
             }
             ParsedHypiSchemaElement::ApiGraphQL(node) => node.borrow_mut().append_child(ctx, child),
@@ -500,23 +457,7 @@ impl ParsedHypiSchemaElement {
                 // node.borrow_mut().set_str_body(ctx, value)
                 Ok(())
             }
-            ParsedHypiSchemaElement::ApiEndpointCall(node) => {
-                node.borrow_mut().set_str_body(ctx, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointScript(node) => {
-                node.borrow_mut().set_str_body(ctx, value)
-            }
-
             ParsedHypiSchemaElement::ApiEndpointResponse(node) => {
-                node.borrow_mut().set_str_body(ctx, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointSql(node) => {
-                node.borrow_mut().set_str_body(ctx, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointFn(node) => {
-                node.borrow_mut().set_str_body(ctx, value)
-            }
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(node) => {
                 node.borrow_mut().set_str_body(ctx, value)
             }
             ParsedHypiSchemaElement::ApiGraphQL(node) => node.borrow_mut().set_str_body(ctx, value),
@@ -553,7 +494,6 @@ impl ParsedHypiSchemaElement {
             ParsedHypiSchemaElement::ApiRest(node) => node.borrow_mut().validate(ctx),
             ParsedHypiSchemaElement::ApiEndpoint(node) => node.borrow_mut().validate(ctx),
             ParsedHypiSchemaElement::ApiEndpointResponse(node) => node.borrow_mut().validate(ctx),
-            ParsedHypiSchemaElement::ApiEndpointSql(node) => node.borrow_mut().validate(ctx),
             ParsedHypiSchemaElement::DockerStep(_node) => {
                 //node.borrow_mut().validate(ctx)
                 Ok(())
@@ -562,10 +502,6 @@ impl ParsedHypiSchemaElement {
                 //node.borrow_mut().validate(ctx)
                 Ok(())
             }
-            ParsedHypiSchemaElement::ApiEndpointFn(node) => node.borrow_mut().validate(ctx),
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(node) => node.borrow_mut().validate(ctx),
-            ParsedHypiSchemaElement::ApiEndpointScript(node) => node.borrow_mut().validate(ctx),
-            ParsedHypiSchemaElement::ApiEndpointCall(node) => node.borrow_mut().validate(ctx),
             ParsedHypiSchemaElement::ApiGraphQL(node) => node.borrow_mut().validate(ctx),
             ParsedHypiSchemaElement::ApiJob(node) => node.borrow_mut().validate(ctx),
             ParsedHypiSchemaElement::Pipeline(node) => node.borrow_mut().validate(ctx),
@@ -780,66 +716,6 @@ impl ParsedHypiSchemaElement {
                 loc.child_index = child_index;
                 loc.file_name = file_name;
             }
-            ParsedHypiSchemaElement::ApiEndpointSql(node) => {
-                let mref = &mut node.borrow_mut();
-                let loc = if is_start {
-                    &mut mref.start_pos
-                } else {
-                    &mut mref.end_pos
-                };
-                loc.line = line;
-                loc.column = column;
-                loc.child_index = child_index;
-                loc.file_name = file_name;
-            }
-            ParsedHypiSchemaElement::ApiEndpointFn(node) => {
-                let mref = &mut node.borrow_mut();
-                let loc = if is_start {
-                    &mut mref.start_pos
-                } else {
-                    &mut mref.end_pos
-                };
-                loc.line = line;
-                loc.column = column;
-                loc.child_index = child_index;
-                loc.file_name = file_name;
-            }
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(node) => {
-                let mref = &mut node.borrow_mut();
-                let loc = if is_start {
-                    &mut mref.start_pos
-                } else {
-                    &mut mref.end_pos
-                };
-                loc.line = line;
-                loc.column = column;
-                loc.child_index = child_index;
-                loc.file_name = file_name;
-            }
-            ParsedHypiSchemaElement::ApiEndpointScript(node) => {
-                let mref = &mut node.borrow_mut();
-                let loc = if is_start {
-                    &mut mref.start_pos
-                } else {
-                    &mut mref.end_pos
-                };
-                loc.line = line;
-                loc.column = column;
-                loc.child_index = child_index;
-                loc.file_name = file_name;
-            }
-            ParsedHypiSchemaElement::ApiEndpointCall(node) => {
-                let mref = &mut node.borrow_mut();
-                let loc = if is_start {
-                    &mut mref.start_pos
-                } else {
-                    &mut mref.end_pos
-                };
-                loc.line = line;
-                loc.column = column;
-                loc.child_index = child_index;
-                loc.file_name = file_name;
-            }
             ParsedHypiSchemaElement::ApiGraphQL(node) => {
                 let mref = &mut node.borrow_mut();
                 let loc = if is_start {
@@ -969,13 +845,8 @@ impl ParsedHypiSchemaElement {
             ParsedHypiSchemaElement::ApiRest(_) => EL_REST,
             ParsedHypiSchemaElement::ApiEndpoint(_) => EL_ENDPOINT,
             ParsedHypiSchemaElement::ApiEndpointResponse(_) => EL_QUERY_OPTIONS_RESPONSE,
-            ParsedHypiSchemaElement::ApiEndpointSql(_) => EL_SQL,
             ParsedHypiSchemaElement::DockerStep(_) => EL_STEP,
             ParsedHypiSchemaElement::DockerStepBuilder(_) => EL_STEP_BUILDER,
-            ParsedHypiSchemaElement::ApiEndpointFn(_) => EL_FN,
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(_) => EL_WEBSOCKET,
-            ParsedHypiSchemaElement::ApiEndpointScript(_) => EL_SCRIPT,
-            ParsedHypiSchemaElement::ApiEndpointCall(_) => EL_CALL,
             ParsedHypiSchemaElement::ApiGraphQL(_) => EL_GRAPHQL,
             ParsedHypiSchemaElement::ApiJob(_) => EL_JOB,
             ParsedHypiSchemaElement::Pipeline(_) => EL_COLUMN_PIPELINE,
@@ -1194,26 +1065,6 @@ where
         EL_ENDPOINT => Ok(ParsedHypiSchemaElement::ApiEndpoint(new_node_ptr(
             ParsedEndpoint::default(),
         ))),
-        EL_SCRIPT => Ok(ParsedHypiSchemaElement::ApiEndpointScript(new_node_ptr(
-            ParsedEndpointScript {
-                start_pos: Location::default(),
-                end_pos: Location::default(),
-                file: "".to_string(),
-                label: None,
-                typ: ScriptType::JavaScript,
-                is_async: false,
-            },
-        ))),
-        EL_CALL => Ok(ParsedHypiSchemaElement::ApiEndpointCall(new_node_ptr(
-            ParsedCall {
-                start_pos: Location::default(),
-                end_pos: Location::default(),
-                target: "".to_string(),
-                label: None,
-                mappings: vec![],
-                is_async: false,
-            },
-        ))),
         EL_GRAPHQL => Ok(ParsedHypiSchemaElement::ApiGraphQL(new_node_ptr(
             ParsedGraphQL {
                 start_pos: Location::default(),
@@ -1246,29 +1097,6 @@ where
                 mappings: vec![],
             }),
         )),
-
-        EL_SQL => Ok(ParsedHypiSchemaElement::ApiEndpointSql(new_node_ptr(
-            ParsedEndpointSql {
-                start_pos: Location::default(),
-                end_pos: Location::default(),
-                sql: "".to_string(),
-                db_name: None,
-                label: None,
-                mappings: vec![],
-                is_async: false,
-            },
-        ))),
-        EL_FN => Ok(ParsedHypiSchemaElement::ApiEndpointFn(new_node_ptr(
-            ParsedEndpointFn {
-                start_pos: Location::default(),
-                end_pos: Location::default(),
-                name: "".to_string(),
-                label: None,
-                version: "".to_string(),
-                mappings: vec![],
-                is_async: false,
-            },
-        ))),
         EL_STEP => Ok(ParsedHypiSchemaElement::DockerStep(new_node_ptr(
             ParsedDockerStep {
                 start_pos: Location::default(),
@@ -1292,14 +1120,6 @@ where
                 tag: None,
             },
         ))),
-        EL_WEBSOCKET => Ok(ParsedHypiSchemaElement::ApiEndpointWebsocket(new_node_ptr(
-            ParsedEndpointWebsocket {
-                start_pos: Location::default(),
-                end_pos: Location::default(),
-                base: "/".to_string(),
-                sources: vec![],
-            },
-        ))),
         EL_PIPELINE => Ok(ParsedHypiSchemaElement::Pipeline(new_node_ptr(
             ParsedPipeline {
                 start_pos: Location::default(),
@@ -1307,7 +1127,6 @@ where
                 name: "".to_string(),
                 label: None,
                 steps: new_node_ptr(vec![]),
-                docker_steps: new_node_ptr(vec![]),
                 is_async: false,
             },
         ))),
@@ -2687,7 +2506,6 @@ pub struct ParsedEndpoint {
     ///The name of the pipeline which is executed when this endpoint is called
     pub pipeline: Option<String>,
     pub responses: Vec<NodePtr<ParsedEndpointResponse>>,
-    pub websockets: Vec<NodePtr<ParsedEndpointWebsocket>>,
 }
 
 impl<F> HypiSchemaNode<F> for ParsedEndpoint
@@ -2798,10 +2616,6 @@ where
                 self.responses.push(node.clone());
                 Ok(())
             }
-            ParsedHypiSchemaElement::ApiEndpointWebsocket(node) => {
-                self.websockets.push(node.clone());
-                Ok(())
-            }
             _ => Err(HamlError::ParseErr(ParseErr {
                 file: ctx.file_name.clone(),
                 line: ctx.line_number.clone(),
@@ -2896,200 +2710,6 @@ where
                 element: EL_ENDPOINT.to_owned(),
                 message: format!(
                     "The response element doesn't support '{}' as a child.",
-                    (*node).borrow().name()
-                ),
-            })),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ParsedEndpointSql {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub sql: String,
-    pub db_name: Option<String>,
-    pub label: Option<String>,
-    pub mappings: Mappings,
-    pub is_async: bool,
-}
-
-impl<F> HypiSchemaNode<F> for ParsedEndpointSql
-where
-    F: Vfs,
-{
-    fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
-        match name.to_lowercase().as_str() {
-            ATTR_ASYNC => {
-                self.is_async = value.to_ascii_lowercase() == "true";
-                Ok(())
-            }
-            ATTR_DB => {
-                self.db_name = Some(value);
-                Ok(())
-            }
-            ATTR_LABEL => {
-                self.label = Some(value);
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNKNOWN_ATTR.clone(),
-                element: EL_SQL.to_owned(),
-                message: format!("The sql element doesn't support a '{}' attribute.", name),
-            })),
-        }
-    }
-    fn set_str_body(&mut self, _ctx: &ParseCtx<F>, value: String) -> Result<()> {
-        self.sql = value;
-        Ok(())
-    }
-    fn append_child(
-        &mut self,
-        ctx: &ParseCtx<F>,
-        node: NodePtr<ParsedHypiSchemaElement>,
-    ) -> Result<()> {
-        match &*(*node).borrow() {
-            ParsedHypiSchemaElement::Mapping(mapping) => {
-                self.mappings.push(mapping.clone());
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNSUPPORTED_CHILD.clone(),
-                element: EL_SQL.to_owned(),
-                message: format!(
-                    "The SQL element doesn't support '{}' as a child.",
-                    (*node).borrow().name()
-                ),
-            })),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ParsedEndpointFn {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub name: String,
-    pub label: Option<String>,
-    pub version: String,
-    pub mappings: Mappings,
-    pub is_async: bool,
-}
-
-impl<F> HypiSchemaNode<F> for ParsedEndpointFn
-where
-    F: Vfs,
-{
-    fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
-        match name.to_lowercase().as_str() {
-            ATTR_LABEL => {
-                self.label = Some(value);
-                Ok(())
-            }
-            ATTR_NAME => {
-                self.name = value;
-                Ok(())
-            }
-            ATTR_ASYNC => {
-                self.is_async = value.to_ascii_lowercase() == "true";
-                Ok(())
-            }
-            ATTR_VERSION => {
-                self.version = value;
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNKNOWN_ATTR.clone(),
-                element: EL_FN.to_owned(),
-                message: format!("The fn element doesn't support a '{}' attribute.", name),
-            })),
-        }
-    }
-    fn append_child(
-        &mut self,
-        ctx: &ParseCtx<F>,
-        node: NodePtr<ParsedHypiSchemaElement>,
-    ) -> Result<()> {
-        match &*(*node).borrow() {
-            ParsedHypiSchemaElement::Mapping(mapping) => {
-                self.mappings.push(mapping.clone());
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNSUPPORTED_CHILD.clone(),
-                element: EL_FN.to_owned(),
-                message: format!(
-                    "The fn element doesn't support '{}' as a child.",
-                    (*node).borrow().name()
-                ),
-            })),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ParsedEndpointWebsocket {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub base: String,
-    pub sources: Vec<String>,
-}
-
-impl<F> HypiSchemaNode<F> for ParsedEndpointWebsocket
-where
-    F: Vfs,
-{
-    fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
-        match name.to_lowercase().as_str() {
-            ATTR_BASE => {
-                self.base = value;
-                Ok(())
-            }
-            ATTR_SOURCE => {
-                for src in value.split("|") {
-                    self.sources.push(src.to_owned());
-                }
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNKNOWN_ATTR.clone(),
-                element: EL_WEBSOCKET.to_owned(),
-                message: format!(
-                    "The websocket element doesn't support a '{}' attribute.",
-                    name
-                ),
-            })),
-        }
-    }
-    fn append_child(
-        &mut self,
-        ctx: &ParseCtx<F>,
-        node: NodePtr<ParsedHypiSchemaElement>,
-    ) -> Result<()> {
-        match &*(*node).borrow() {
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNSUPPORTED_CHILD.clone(),
-                element: EL_WEBSOCKET.to_owned(),
-                message: format!(
-                    "The websocket element does not support '{}' child elements.",
                     (*node).borrow().name()
                 ),
             })),
@@ -3241,150 +2861,13 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ScriptType {
-    ///Pure V8 based JavaScript
-    JavaScript,
-}
-#[derive(Debug)]
-pub struct ParsedEndpointScript {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    ///the name of the file containing the script's contents
-    pub file: String,
-    pub label: Option<String>,
-    pub typ: ScriptType,
-    pub is_async: bool,
-}
-
-impl<F> HypiSchemaNode<F> for ParsedEndpointScript
-where
-    F: Vfs,
-{
-    fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
-        match name.to_lowercase().as_str() {
-            ATTR_LABEL => {
-                self.label = Some(value);
-                Ok(())
-            }
-            ATTR_ASYNC => {
-                self.is_async = value.to_ascii_lowercase() == "true";
-                Ok(())
-            }
-            ATTR_IMPORT => {
-                self.file = value;
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNKNOWN_ATTR.clone(),
-                element: EL_JOB.to_owned(),
-                message: format!("The script element doesn't support a '{}' attribute.", name),
-            })),
-        }
-    }
-    fn append_child(
-        &mut self,
-        ctx: &ParseCtx<F>,
-        node: NodePtr<ParsedHypiSchemaElement>,
-    ) -> Result<()> {
-        match &*(*node).borrow() {
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNSUPPORTED_CHILD.clone(),
-                element: EL_JOB.to_owned(),
-                message: format!(
-                    "The script element does not support '{}' child elements.",
-                    (*node).borrow().name()
-                ),
-            })),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ParsedCall {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub target: String,
-    pub label: Option<String>,
-    pub mappings: Mappings,
-    pub is_async: bool,
-}
-
-impl<F> HypiSchemaNode<F> for ParsedCall
-where
-    F: Vfs,
-{
-    fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
-        match name.to_lowercase().as_str() {
-            ATTR_LABEL => {
-                self.label = Some(value);
-                Ok(())
-            }
-            ATTR_ASYNC => {
-                self.is_async = value.to_ascii_lowercase() == "true";
-                Ok(())
-            }
-            ATTR_TARGET => {
-                self.target = value;
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNKNOWN_ATTR.clone(),
-                element: EL_CALL.to_owned(),
-                message: format!("The call element doesn't support a '{}' attribute.", name),
-            })),
-        }
-    }
-    fn append_child(
-        &mut self,
-        ctx: &ParseCtx<F>,
-        node: NodePtr<ParsedHypiSchemaElement>,
-    ) -> Result<()> {
-        match &*(*node).borrow() {
-            ParsedHypiSchemaElement::Mapping(mapping) => {
-                self.mappings.push(mapping.clone());
-                Ok(())
-            }
-            _ => Err(HamlError::ParseErr(ParseErr {
-                file: ctx.file_name.clone(),
-                line: ctx.line_number.clone(),
-                column: ctx.column.clone(),
-                code: HAML_CODE_UNSUPPORTED_CHILD.clone(),
-                element: EL_CALL.to_owned(),
-                message: format!(
-                    "The call element does not support '{}' child elements.",
-                    (*node).borrow().name()
-                ),
-            })),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum ParsedStep {
-    Sql(NodePtr<ParsedEndpointSql>),
-    Fn(NodePtr<ParsedEndpointFn>),
-    Call(NodePtr<ParsedCall>),
-    Script(NodePtr<ParsedEndpointScript>),
-    Pipeline(NodePtr<ParsedPipeline>),
-}
 #[derive(Debug)]
 pub struct ParsedPipeline {
     pub start_pos: Location,
     pub end_pos: Location,
     pub name: String,
     pub label: Option<String>,
-    pub steps: NodePtr<Vec<ParsedStep>>,
-    pub docker_steps: NodePtr<Vec<NodePtr<ParsedDockerStep>>>,
+    pub steps: NodePtr<Vec<NodePtr<ParsedDockerStep>>>,
     pub is_async: bool,
 }
 
@@ -3419,7 +2902,6 @@ where
                             name: "".to_string(),
                             label: None,
                             steps: new_node_ptr(vec![]),
-                            docker_steps: new_node_ptr(vec![]),
                             is_async: false,
                         });
                         let _ = std::mem::replace(self, pipeline);
@@ -3471,29 +2953,7 @@ where
     ) -> Result<()> {
         match &*(*node).borrow() {
             ParsedHypiSchemaElement::DockerStep(f) => {
-                self.docker_steps.borrow_mut().push(f.clone());
-                Ok(())
-            }
-            ParsedHypiSchemaElement::ApiEndpointFn(f) => {
-                self.steps.borrow_mut().push(ParsedStep::Fn(f.clone()));
-                Ok(())
-            }
-            ParsedHypiSchemaElement::ApiEndpointSql(f) => {
-                self.steps.borrow_mut().push(ParsedStep::Sql(f.clone()));
-                Ok(())
-            }
-            ParsedHypiSchemaElement::ApiEndpointCall(f) => {
-                self.steps.borrow_mut().push(ParsedStep::Call(f.clone()));
-                Ok(())
-            }
-            ParsedHypiSchemaElement::ApiEndpointScript(f) => {
-                self.steps.borrow_mut().push(ParsedStep::Script(f.clone()));
-                Ok(())
-            }
-            ParsedHypiSchemaElement::Pipeline(f) => {
-                self.steps
-                    .borrow_mut()
-                    .push(ParsedStep::Pipeline(f.clone()));
+                self.steps.borrow_mut().push(f.clone());
                 Ok(())
             }
             _ => Err(HamlError::ParseErr(ParseErr {
