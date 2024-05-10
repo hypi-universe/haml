@@ -18,7 +18,6 @@ use rapid_utils::http_utils::HttpMethod;
 use rapid_fs::vfs::Vfs;
 use rapid_fs::vfs::BoundVfs;
 use rapid_utils::err::{ErrorCode, HttpError};
-use rapid_utils::http as http;
 
 pub type Result<T> = std::result::Result<T, HamlError>;
 lazy_static!{
