@@ -1,15 +1,16 @@
-use crate::haml::{
-    ColumnDefault, ColumnType, ParsedCall, ParsedColumn, ParsedColumnPipeline, ParsedConstraint,
-    ParsedDb, ParsedDockerStep, ParsedDocument, ParsedEndpoint, ParsedEndpointFn,
-    ParsedEndpointResponse, ParsedEndpointScript, ParsedEndpointSql, ParsedEndpointWebsocket,
-    ParsedEnv, ParsedGraphQL, ParsedHypi, ParsedJob, ParsedKeyValuePair, ParsedMapping, ParsedMeta,
-    ParsedPipeline, ParsedRest, ParsedSchema, ParsedStep, ParsedTable, ScriptType, WellKnownType,
-};
-use crate:: {
+use rapid_utils::http_utils::HttpMethod;
+
+use crate::{
     CoreApi, DatabaseType, DockerConnectionInfo, DockerStepProvider, ImplicitDockerStepPosition,
     Location, TableConstraintType,
 };
-use rapid_utils::http_utils::HttpMethod;
+use crate::haml_parser::{
+    ColumnDefault, ColumnType, ParsedColumn, ParsedColumnPipeline, ParsedConstraint,
+    ParsedDb, ParsedDockerStep, ParsedDocument, ParsedEndpoint,
+    ParsedEndpointResponse, ParsedEndpointWebsocket,
+    ParsedEnv, ParsedGraphQL, ParsedHypi, ParsedJob, ParsedKeyValuePair, ParsedMapping, ParsedMeta
+    , ParsedRest, ParsedSchema, ParsedTable, WellKnownType,
+};
 
 #[derive(Clone, Debug)]
 pub struct DocumentDef {
@@ -17,7 +18,6 @@ pub struct DocumentDef {
     pub end_pos: Location,
     pub crud_enabled_tables: Vec<String>,
     pub enabled_core_apis: Vec<CoreApi>,
-    pub pipelines: Vec<Pipeline>,
     pub rest: Option<RestApiDef>,
     pub graphql: Option<GraphQLApiDef>,
     pub jobs: Vec<JobDef>,
@@ -43,10 +43,6 @@ impl From<&ParsedDocument> for DocumentDef {
                 .as_ref()
                 .map(|v| (&*v.borrow()).core_apis.clone())
                 .unwrap_or_else(|| vec![]),
-            pipelines: (&*apis.pipelines.borrow())
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
             rest: apis.rest.as_ref().map(|v| (&*v.borrow()).into()),
             graphql: apis.graphql.as_ref().map(|v| (&*v.borrow()).into()),
             jobs: (&*apis.jobs.borrow())
@@ -147,6 +143,7 @@ pub struct JobDef {
     pub enabled: bool,
     pub repeats: bool,
 }
+
 impl From<&ParsedJob> for JobDef {
     fn from(value: &ParsedJob) -> Self {
         JobDef {
@@ -163,6 +160,7 @@ impl From<&ParsedJob> for JobDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct RestApiDef {
     pub start_pos: Location,
@@ -185,6 +183,7 @@ impl From<&ParsedRest> for RestApiDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct EndpointDef {
     pub start_pos: Location,
@@ -226,6 +225,7 @@ impl From<&ParsedEndpoint> for EndpointDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct ResponseDef {
     pub start_pos: Location,
@@ -255,6 +255,7 @@ impl From<&ParsedEndpointResponse> for ResponseDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct WebsocketDef {
     pub start_pos: Location,
@@ -274,6 +275,7 @@ impl From<&ParsedEndpointWebsocket> for WebsocketDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct TableDef {
     pub start_pos: Location,
@@ -315,6 +317,7 @@ pub struct ColumnDef {
     pub primary_key: bool,
     pub pipeline: Option<ColumnPipeline>,
 }
+
 impl From<&ParsedColumn> for ColumnDef {
     fn from(value: &ParsedColumn) -> Self {
         ColumnDef {
@@ -356,6 +359,7 @@ impl From<&ParsedConstraint> for ConstraintDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct ColumnPipeline {
     pub args_start_pos: Option<Location>,
@@ -371,6 +375,7 @@ pub struct ColumnPipeline {
     ///apply if reading
     pub read: Vec<String>,
 }
+
 impl From<&ParsedColumnPipeline> for ColumnPipeline {
     fn from(value: &ParsedColumnPipeline) -> Self {
         ColumnPipeline {
@@ -451,6 +456,7 @@ impl From<&ParsedHypi> for HypiDef {
         }
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct Mapping {
     pub start_pos: Location,
@@ -471,213 +477,6 @@ impl From<&ParsedMapping> for Mapping {
             typ: value.typ.clone(),
             children: value
                 .children
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct SqlStep {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub sql: String,
-    pub db_name: Option<String>,
-    pub label: Option<String>,
-    pub mappings: Vec<Mapping>,
-    pub is_async: bool,
-}
-impl SqlStep {
-    pub fn label(&self) -> String {
-        self.label
-            .clone()
-            .unwrap_or_else(|| self.start_pos.child_index.to_string())
-    }
-}
-
-impl From<&ParsedEndpointSql> for SqlStep {
-    fn from(value: &ParsedEndpointSql) -> Self {
-        SqlStep {
-            start_pos: value.start_pos.clone(),
-            end_pos: value.end_pos.clone(),
-            sql: value.sql.clone(),
-            db_name: value.db_name.clone(),
-            label: value.label.clone(),
-            is_async: value.is_async,
-            mappings: value
-                .mappings
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct FnStep {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub name: String,
-    pub label: Option<String>,
-    pub version: String,
-    pub mappings: Vec<Mapping>,
-    pub is_async: bool,
-}
-impl FnStep {
-    pub fn label(&self) -> String {
-        self.label
-            .clone()
-            .unwrap_or_else(|| self.start_pos.child_index.to_string())
-    }
-}
-impl From<&ParsedEndpointFn> for FnStep {
-    fn from(value: &ParsedEndpointFn) -> Self {
-        FnStep {
-            start_pos: value.start_pos.clone(),
-            end_pos: value.end_pos.clone(),
-            name: value.name.clone(),
-            label: value.label.clone(),
-            version: value.version.clone(),
-            is_async: value.is_async,
-            mappings: value
-                .mappings
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct CallStep {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub is_async: bool,
-    pub target: String,
-    pub label: Option<String>,
-    pub mappings: Vec<Mapping>,
-}
-impl CallStep {
-    pub fn label(&self) -> String {
-        self.label
-            .clone()
-            .unwrap_or_else(|| self.start_pos.child_index.to_string())
-    }
-}
-
-impl From<&ParsedCall> for CallStep {
-    fn from(value: &ParsedCall) -> Self {
-        CallStep {
-            start_pos: value.start_pos.clone(),
-            end_pos: value.end_pos.clone(),
-            target: value.target.clone(),
-            label: value.label.clone(),
-            is_async: value.is_async,
-            mappings: value
-                .mappings
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct ScriptStep {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub is_async: bool,
-    ///the name of the file containing the script's contents
-    pub file: String,
-    pub label: Option<String>,
-    pub typ: ScriptType,
-}
-impl ScriptStep {
-    pub fn label(&self) -> String {
-        self.label
-            .clone()
-            .unwrap_or_else(|| self.start_pos.child_index.to_string())
-    }
-}
-
-impl From<&ParsedEndpointScript> for ScriptStep {
-    fn from(value: &ParsedEndpointScript) -> Self {
-        ScriptStep {
-            start_pos: value.start_pos.clone(),
-            end_pos: value.end_pos.clone(),
-            is_async: value.is_async,
-            file: value.file.clone(),
-            label: value.label.clone(),
-            typ: value.typ.clone(),
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub enum Step {
-    Sql(SqlStep),
-    Fn(FnStep),
-    Call(CallStep),
-    Script(ScriptStep),
-    Pipeline(Pipeline),
-}
-
-impl Step {
-    pub fn label(&self) -> String {
-        match self {
-            Step::Sql(step) => step
-                .label
-                .clone()
-                .unwrap_or_else(|| step.start_pos.child_index.to_string()),
-            Step::Fn(step) => step
-                .label
-                .clone()
-                .unwrap_or_else(|| step.start_pos.child_index.to_string()),
-            Step::Call(step) => step
-                .label
-                .clone()
-                .unwrap_or_else(|| step.start_pos.child_index.to_string()),
-            Step::Script(step) => step
-                .label
-                .clone()
-                .unwrap_or_else(|| step.start_pos.child_index.to_string()),
-            Step::Pipeline(step) => step
-                .label
-                .clone()
-                .unwrap_or_else(|| step.start_pos.child_index.to_string()),
-        }
-    }
-}
-impl From<&ParsedStep> for Step {
-    fn from(value: &ParsedStep) -> Self {
-        match value {
-            ParsedStep::Sql(value) => Step::Sql((&*value.borrow()).into()),
-            ParsedStep::Fn(value) => Step::Fn((&*value.borrow()).into()),
-            ParsedStep::Call(value) => Step::Call((&*value.borrow()).into()),
-            ParsedStep::Script(value) => Step::Script((&*value.borrow()).into()),
-            ParsedStep::Pipeline(value) => Step::Pipeline((&*value.borrow()).into()),
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct Pipeline {
-    pub start_pos: Location,
-    pub end_pos: Location,
-    pub name: String,
-    pub label: Option<String>,
-    pub steps: Vec<Step>,
-    pub docker_steps: Vec<DockerStep>,
-    pub is_async: bool,
-}
-
-impl From<&ParsedPipeline> for Pipeline {
-    fn from(value: &ParsedPipeline) -> Self {
-        Pipeline {
-            start_pos: value.start_pos.clone(),
-            end_pos: value.end_pos.clone(),
-            name: value.name.to_owned(),
-            label: value.label.to_owned(),
-            is_async: value.is_async,
-            steps: value.steps.borrow().iter().map(|v| v.into()).collect(),
-            docker_steps: value
-                .docker_steps
-                .borrow()
                 .iter()
                 .map(|v| (&*v.borrow()).into())
                 .collect(),
@@ -732,6 +531,7 @@ impl From<&ParsedSchema> for SchemaDef {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct DatabaseDef {
     pub start_pos: Location,

@@ -2,12 +2,14 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use rapid_fs::vfs::*;
-use haml::{ColumnType, CoreApi, DatabaseType, ParsedDocument, ParsedHypiSchemaElement, WellKnownType};
+use hamlx::DatabaseType;
+use hamlx::CoreApi;
+use hamlx::haml_parser::*;
 
 mod common;
 
 #[test]
-fn can_parse_haml() -> haml::Result<()> {
+fn can_parse_haml() -> hamlx::haml_parser::Result<()> {
     let node = ParsedDocument::from_str(
         "schema.xml".to_owned(),
         Arc::new(BoundVfs::new(

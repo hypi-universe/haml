@@ -468,8 +468,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "haml"
-version = "0.1.0"
+name = "hamlx"
+version = "0.1.1"
 dependencies = [
  "lazy_static",
  "log",

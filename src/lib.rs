@@ -1,8 +1,9 @@
-pub use haml::*;
+// pub use haml::*;
 pub mod manifested_schema;
-pub mod haml;
+pub mod haml_parser;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+
 #[derive(Debug, Default, Clone)]
 pub struct Location {
     pub file_name: String,
@@ -34,6 +35,7 @@ pub enum DatabaseType {
     Oracle,
     MsSql,
 }
+
 impl DatabaseType {
     pub fn from(v: &String) -> Option<DatabaseType> {
         match v.to_lowercase().as_str() {
