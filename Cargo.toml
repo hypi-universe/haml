@@ -1,0 +1,21 @@
+[package]
+name = "haml"
+version = "0.1.0"
+edition = "2021"
+license-file = "LICENSE.md"
+description = "Hypi Application Markup Language"
+homepage = "https://github.com/hypi-universe/haml"
+repository = "https://github.com/hypi-universe/haml"
+authors = [
+    "zcourts"
+]
+readme = "README.md"
+categories = ["web-programming"]
+
+[dependencies]
+rapid-utils = "0.1.0"
+rapid-fs = "0.1.0"
+lazy_static = "1.4.0"
+thiserror = "1.0.60"
+log = "0.4.21"
+xml = "0.8.20"

@@ -1,0 +1,9 @@
+<table name="team_icon">
+    <column name="image_102" type="TEXT"/>
+    <column name="image_132" type="TEXT"/>
+    <column name="image_34" type="TEXT"/>
+    <column name="image_44" type="TEXT"/>
+    <column name="image_68" type="TEXT"/>
+    <column name="image_88" type="TEXT"/>
+    <column name="image_default" type="BOOLEAN"/>
+</table>

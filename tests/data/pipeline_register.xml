@@ -1,0 +1,82 @@
+<!--
+    By using mappings, a step can extract info from
+    1. env
+    2. message - the original message
+    3. message.field.<name> - into a target field
+    If no mappings are provided, the step sends all the message's fields into the plugin
+    For HTTP, the fields in a message are obtained by using the content type.
+    application/json, form-url-encoded and multipart are supported.
+    Any other content type is unparsed. This is implemented by the default "step" plugin.
+    The pipeline can set the "first-step-plugin" attribute to another plugin which behaves differently.
+    In which case, the unparsed payload is passed to the plugin using tmpfs (linux), normal file on windows.
+    The first-step-plugin is implicit unless specified, we use the built in plugin to interpret the supported content types.
+    Manually providing it just overrides the default.
+    Subsequent steps receive the output of the last step if no mappings are provided.
+    If there are mappings then they get only the fields mapped.
+    An entire step's output can be mapping by just using the step's name.
+
+
+-->
+<pipeline>
+    <!-- <builder-name>:path/to/src|file:path/to/src/Dockerfile|docker:image-name:and-version -->
+    <step name="create_acc" provider="image:tag">
+        <mapping from="${args.email}" to="args.email"/>
+        <mapping from="${env.GOOGLE_PLACE_KEY}" to="env.GOOGLE_PLACE_KEY"/>
+        <mapping from="${env.STRIPE_API_KEY}" to="env.STRIPE_API_KEY"/>
+    </step>
+    <!--
+                Execute the v1 of verify-email-domain.
+                Take the email the user passed in and set it as the email argument in the function.
+                Take the two environment variables and make them available as environment variables in the function.
+            -->
+    <fn name="verify-email-domain" version="v1">
+        <mapping from="${args.email}" to="args.email"/>
+        <mapping from="${env.GOOGLE_PLACE_KEY}" to="env.GOOGLE_PLACE_KEY"/>
+        <mapping from="${env.STRIPE_API_KEY}" to="env.STRIPE_API_KEY"/>
+    </fn>
+    <!--
+                We can do the SQL ourselves, but we're then responsible for populating the required Hypi columns:
+                hypi_id, hypi_created, hypi_updated, hypi_createdBy.
+                The SQL tag has access to the request environment.
+                Note use of args, this gets the value from the body, query string or headers in that order.
+                The expression will be replaced with a SQL placeholder so DO NOT quote it.
+            -->
+    <sql db="db1">
+        INSERT INTO team_name_reservation(username,hypi_id, hypi_created, hypi_updated, hypi_createdBy)
+        VALUES(${args.domain},ulid(),now(),now(),${request.id});
+    </sql>
+    <!-- this will return a list-->
+    <sql>
+        -- our model requires a boolean column called success so we
+        -- return true if our request ID was the first to claim the username in the last minute
+        --request_id is a snowflake ID guaranteeing the order so the smallest one is the first to have inserted the
+        username
+        SELECT CASE
+        WHEN r.hypi_createdBy = ${request.id} THEN TRUE
+        ELSE FALSE
+        END AS success
+        FROM team_name_reservation r WHERE
+        r.username = ${args.username} AND
+        r.hypi_created > now() - INTERVAL '1 minute'
+        ORDER BY r.createdBy ASC
+        LIMIT 1
+        <!--One or more mappings in a SQL block transforms the result from the query-->
+        <mapping from="success" to="is_successful"/>
+    </sql>
+    <!--Makes a HTTP call to the REST endpoint named create_account-->
+    <call target="rest.create_account">
+        <mapping from="${body.username}" to="username"/>
+        <mapping from="${body.email}" to="email"/>
+        <mapping from="${body.password}" to="password"/>
+    </call>
+    <!--Executes the given JavaScript script. V8 JavaScript engine is embedded-->
+    <script import="script1.js"/>
+    <!--
+        An async import means this pipeline will run at the same time as the next step.
+        If no subsequent step references this pipeline then it will run in the background even as the root pipeline returns/completes.
+        There is a hard upper limit to parallel pipelines per workspace.
+        If this pipeline is the last it cannot be async...the last step of a pipeline produces its output by default
+         async="true" - but it can't be combined with an import
+    -->
+    <pipeline import="pipeline2.xml"/>
+</pipeline>

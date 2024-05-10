@@ -1,0 +1,337 @@
+<?xml version="1.0"?>
+<document
+        xmlns="https://hypi.ai/schema"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation=""
+>
+    <meta>
+        <pair key="label" value="Slack"/>
+    </meta>
+    <env name="API_KEY" value="abc.123"/>
+    <!-- We support MekaDB by default, no config needed. -->
+    <db label="db1" type="mekadb" db_name="abc123" username="user1" password="pass1" host="mekadb.hypi.app"
+        port="2024">
+        <schema name="default">
+            <table name="account">
+                <column name="username" type="TEXT" primary_key="true"/>
+                <column name="email" type="TEXT" nullable="false"/>
+                <column name="password" type="TEXT" nullable="false">
+                    <pipeline>
+                        <!--
+                            the args pipeline allows you to always apply this function whether it is a read or a write.
+                            here, we will store the password by first bcrypt encoding it and because
+                            it applies on read, when we do a WHERE password = $1 the $1 will also be bcrypt encoded before the comparison is done i.e.
+                            WHERE password =  bcrypt($1)
+                        -->
+                        <args value="bcrypt1"/>
+                        <!-- if we had a function to apply only when inserting or updating the password we could put it here-->
+                        <write value="bcrypt2"/>
+                        <!-- this applies if the password is used in the select, the null function always returns null meaning the password is never returned-->
+                        <read value="null"/>
+                    </pipeline>
+                </column>
+                <!--
+                    the well-known attribute tells Hypi that this table should be used for one of the core tables it supports
+                    in this case, the Account table which allows users to register and login.
+                    Tables with the well-known attribute can have any columns they want, Hypi will require one or more.
+                    If no table is included with the well-known attribute then Hypi will automatically create them when it needs to use them
+                -->
+                <hypi well-known="account">
+                    <!-- mappings are optional but if your table uses a different name for Hypi's expected columns this is how you tell the platform -->
+                    <!-- Hypi needs username, email and password columns so if we had a column called xyz and wanted to use it to store usernames this is how we tell Hypi that-->
+                    <mapping from="username" to="xyz"/>
+                </hypi>
+            </table>
+            <table name="file">
+                <!-- the name of the file, including extension-->
+                <column name="name" type="TEXT"/>
+                <!-- path where the file was uploaded directory style e.g. Documents/file.png-->
+                <column name="path" type="TEXT"/>
+                <!--the mime type Hypi has detected for the file-->
+                <column name="type" type="TEXT"/>
+                <column name="size_in_bytes" type="BIGINT"/>
+                <!-- We want Hypi to store meta about uploaded files in this table-->
+                <hypi well-known="file"/>
+            </table>
+            <!--
+                A conversation in Slack is a "channel like" thing.
+                This includes channels, a 1-1 chat or a 1-many chat
+                https://api.slack.com/types/channel
+                https://redocly.github.io/redoc/?url=https://api.apis.guru/v2/specs/slack.com/1.7.0/openapi.json#tag/chat/operation/chat_scheduleMessage
+            -->
+            <table name="conversation">
+                <column name="label" type="TEXT" nullable="false"/>
+                <!--            <column name="purpose" type="TEXT" nullable="false"/>-->
+                <column name="is_archived" type="BOOLEAN" nullable="false"/>
+                <column name="is_channel" type="BOOLEAN" nullable="false"/>
+                <column name="is_ext_shared" type="BOOLEAN"/>
+                <!-- true if this channel is the "general" channel that includes all regular members. In most workspaces this is called #general, but some workspaces have renamed it. -->
+                <column name="is_general" type="BOOLEAN" nullable="false"/>
+                <column name="is_group" type="BOOLEAN" nullable="false"/>
+                <column name="is_im" type="BOOLEAN"/>
+                <column name="is_member" type="BOOLEAN"/>
+                <!-- multi-party instant messages-->
+                <column name="is_mpim" type="BOOLEAN" nullable="false"/>
+                <column name="is_org_shared" type="BOOLEAN" nullable="false"/>
+                <column name="is_pending_ext_shared" type="BOOLEAN"/>
+                <column name="is_private" type="BOOLEAN" nullable="false"/>
+                <column name="is_read_only" type="BOOLEAN"/>
+                <column name="is_shared" type="BOOLEAN" nullable="false"/>
+                <column name="last_read" type="TIMESTAMP"/>
+                <column name="parent_conversation" type="TEXT"/>
+            </table>
+            <!--
+                A junction table used to link a conversation to its members
+                Note that we have specified the primary key fields here.
+                This tells Hypi not to auto add a primary key and use these instead.
+            -->
+            <table name="conversation_member">
+                <column name="account_id" type="TEXT" primary_key="true"/>
+                <column name="conversation_id" type="TEXT" primary_key="true" nullable="false"/>
+            </table>
+            <!--
+                In the Slack API, the purpose is not a simple string
+                https://redocly.github.io/redoc/?url=https://api.apis.guru/v2/specs/slack.com/1.7.0/openapi.json#tag/conversations/operation/conversations_info
+                Hypi support default="UNIQUE" - currently only UNIQUE is supported and it works for
+                TEXT AND BIG INT columns.
+                For TEXT columns it will generate a ULID ID by default.
+                You can use UNIQUE(SQID) to generate a SQID https://sqids.org/
+                For BIG INT columns it will generate a Snowflake 64 bit ID guaranteed to be unique within the app and sequential
+                i.e. a BIG INT default ID generated now will be larger than one generated before.
+            -->
+            <table name="conversation_purpose">
+                <column name="purpose_id" type="TEXT" primary_key="true" default="UNIQUE"/>
+                <column name="conversation_id" type="TEXT" primary_key="true" nullable="false"/>
+                <column name="value" type="TEXT" nullable="false"/>
+            </table>
+            <!--
+                In the Slack API, the purpose is not a simple string
+                https://redocly.github.io/redoc/?url=https://api.apis.guru/v2/specs/slack.com/1.7.0/openapi.json#tag/conversations/operation/conversations_info
+            -->
+            <table name="conversation_topic">
+                <column name="topic_id" type="TEXT" primary_key="true" default="UNIQUE"/>
+                <column name="conversation_id" type="TEXT" primary_key="true" nullable="false"/>
+                <column name="value" type="TEXT" nullable="false"/>
+            </table>
+            <!--
+                Messaging in Slack is confusing - https://api.slack.com/reference/messaging/payload
+                This a simpler take on it
+            -->
+            <table name="message">
+                <column name="text" type="TEXT"/>
+                <column name="id" primary_key="true" type="TEXT"/>
+            </table>
+
+
+            <table name="block">
+                <column name="text" type="TEXT"/>
+                <column name="id" primary_key="true" type="TEXT"/>
+            </table>
+
+            <!--
+                Consider a mention, a file, a url etc as a block.
+                The idea of this message_block table is to treat blocks as a tagged union.
+                i.e. only one of each can be present at a time.
+            -->
+            <table name="message_block">
+                <column name="block_id" type="BIGINT" primary_key="true" default="UNIQUE"/>
+                <column name="message_id" type="TEXT" primary_key="true" nullable="false"/>
+                <column name="position" type="INT" nullable="false"/>
+                <column name="mentioned_account_id" type="TEXT"/>
+                <column name="file_id" type="TEXT" unique="false"/>
+                <column name="url" type="TEXT"/>
+                <!--
+                 name is required - other DBs make it optional but MekaDB won't
+                 https://www.mariadbtutorial.com/mariadb-basics/mariadb-unique-constraint/
+                 https://mariadb.com/kb/en/constraint/
+
+                 According to https://mariadb.com/kb/en/foreign-keys/#constraints there are 4 options but we will only support two:
+                 CASCADE & RESTRICT.
+                 RESTRICT : The change on the parent table is prevented. The statement terminates with an error. This is the default behavior for both ON DELETE and ON UPDATE.
+                 CASCADE  : The change is allowed and propagates on the child table. For example, if a parent row is deleted, the child row is also deleted; if a parent row's ID changes, the child row's ID will also change.
+
+                 The "from" field is name of the column on this table, it doesn't need to specifiy the table name again.
+                 The "to" field is the name of the column on the target table, it MUST include the target table name i.e. block is the table name and id is the column name on the block table.
+                 -->
+                <constraint name="fk_file_id" type="FOREIGN_KEY" on_delete="cascade" on_update="restrict">
+                    <mapping from="block_id" to="block.id"/>
+                    <mapping from="message_id" to="message.id"/>
+                </constraint>
+                <!--
+                    columns can have 1 or more column names from this table
+                -->
+                <constraint name="uq_message_block" type="UNIQUE" columns="block_id,message_id,position"/>
+            </table>
+            <!-- https://redocly.github.io/redoc/?url=https://api.apis.guru/v2/specs/slack.com/1.7.0/openapi.json#tag/team/operation/team_info-->
+            <table name="team">
+                <column name="name" type="TEXT"/>
+                <column name="domain" type="TEXT"/>
+                <column name="email_domain" type="TEXT"/>
+                <column name="icon_id" type="TEXT" nullable="false"/>
+            </table>
+            <table import="table_team_icon.xml"/>
+            <table name="team_member">
+                <column name="account_id" type="TEXT" primary_key="true"/>
+                <column name="team_id" type="TEXT" primary_key="true" nullable="false"/>
+            </table>
+            <table name="team_name_reservation">
+                <column name="username" type="TEXT"/>
+            </table>
+        </schema>
+    </db>
+    <db label="db2" type="postgres" db_name="abc123" username="user2" password="pass2" host="localhost"/>
+    <db label="db3" type="mysql" db_name="abc123" username="user3" password="pass3" host="localhost"/>
+    <db label="db4" type="mariadb" db_name="abc123" username="user4" password="pass4" host="localhost"/>
+    <db label="db5" type="oracle" db_name="abc123" username="user5" password="pass5" host="localhost"/>
+    <db label="db6" type="mssql" db_name="abc123" username="user6" password="pass6" host="localhost"/>
+    <!--
+    Supported forms:
+    1. image:tag
+    2. host/image
+    3. user:pass@host/image:tag
+    4. user:pass@image:tag
+    5. user:pass@host/image
+    6. user:pass@host/image:tag
+    Number 4 will connect to Docker hub
+    -->
+    <step-builder image="user:pass@docker.host.com/image:tag"/>
+    <apis>
+        <!--
+            By default Hypi includes a number of default APIs.
+            Unless you disable it, every table has CRUD APIs.
+            POST   /:table      - inserts a new row into the given table
+            PUT    /:table/:id  - updates an existing row
+            DELETE /:table/:id  - deletes a row
+            GET    /:table      - get a list of rows
+            GET    /:table/:id  - get an existing row
+        -->
+        <!--
+            If you don't want a CRUD API being available on all tables,
+            add a comma separated list of the tables on which it should be enabled.
+            Any table not in this list will NOT have the default CRUD APIs but you can choose to use them in custom APIs
+        -->
+        <global-options
+                enable-crud-on-tables="conversation,message"
+        >
+            <!--
+                Hypi has a set of core APIs that it makes available.
+                They can all be used in a pipeline without being explicitly enabled.
+                BUT, by listing them here explicitly, only those listed will be available to call outside a pipeline.
+                The available core API names are:
+            -->
+            <!--Creates a new user account-->
+            <core-api name="register"/>
+            <core-api name="login-by-email"/>
+            <core-api name="login-by-username"/>
+            <!--login using an external OAuth provider-->
+            <core-api name="oauth"/>
+            <!--Sends an email with a password reset link-->
+            <core-api name="password-reset-trigger"/>
+            <!--Accepts code from a password reset link-->
+            <core-api name="password-reset"/>
+            <!--Verifies an account accepting a code sent to the email-->
+            <core-api name="verify-account"/>
+            <!-- sends a login token to the user's email so they can login without a password-->
+            <core-api name="magic-link"/>
+            <!--sends a code to the user's email with a login code-->
+            <core-api name="2fa-email"/>
+            <!--sends a code to the user's phone with a login code-->
+            <core-api name="2fa-sms"/>
+            <!--accepts a code that was sent to the user-->
+            <core-api name="2fa-step2"/>
+            <!--Google authenticator-->
+            <core-api name="2fa-totp"/>
+            <!-- Implicit steps are applied to ALL pipelines -->
+            <!-- Inserted before first manually provided step in a pipeline. Applies to EVERY pipeline-->
+            <!--            <implicit-step provider="http" before="first"/>-->
+            <!--            <implicit-steps provider="logger" before="first|each|last" after="first|each|last"/>-->
+        </global-options>
+        <pipeline import="pipeline_register.xml"/>
+        <!--Enable a REST API, make all paths relative to base-->
+        <rest base="/api">
+            <endpoint name="create_team" method="post" path="team" accepts="application/json"
+                      produces="application/json" pipeline="pipeline_register.xml">
+                <!--Responses are tested in the order they're defined so the first one without a condition or where the condition is true is returned-->
+                <response status="201" when="${pipeline[0].success == true}"/>
+                <!--
+                    If no mapping is provided, the output of the last step in the pipeline will be returned.
+                    By providing mapping elements in a response element only the fields in the mapping are produced.
+                   The yield attribute makes the response return an object instead of an array if its value is a single number.
+                   Yield supports a range as well so
+                    0 - or any other number yields the object at that index
+                    5.. - return items from index 5 to the end (this would be the 6th item since 0 is the first)
+                    5..11 - return items from 5 to 10 since it is exclusive of the upper end of the range
+                    ..6 - return the first 5 items
+                    NOTE: This range is not forced into your <sql> steps as a limit so ensure you properly limit SQL results
+                    It is however available with the ${response.options.yield} exactly as written in the attribute i.e. an unparsed string
+                -->
+                <response status="400" when="${pipeline[0].success == false}" yield="0">
+                    <mapping from="${pipeline[0].field1}" to="field1a"/>
+                    <mapping from="${pipeline[0].field2}" to="field2a"/>
+                </response>
+                <!--default, there's no when condition-->
+                <response status="200"/>
+            </endpoint>
+            <!--An endpoint can also be imported-->
+            <endpoint import="endpoint_subscription.xml"/>
+        </rest>
+        <!--
+        When a GraphQL API is generated from a REST API,
+        RAPID server uses the input of each endpoint to create a GraphQL input object.
+        Similarly, it uses the output of each endpoint to create a GraphQL type.
+        Each endpoint's name is used to create either a GraphQL Query or Mutation function.
+        Any websocket endpoint is mapped to a GraphQL subscription. In addition, if enable-susbcriptions="true"
+        then the public CRUD APIs also have a subscription method generated.
+        In the future we'll have support for manually defining all of these in GraphQL but for now, it's generated from REST
+        -->
+        <graphql base="/graphql" from="rest" enable-subscriptions="true"/>
+        <!--
+        Possible interval values are:
+          #60 seconds - hence miniumum time a job can be set to repeat is every minute
+          MINUTE
+          #60 minutes
+          HOUR
+          #24 hours, 0 - 23
+          DAY
+          #Sun = 7th day, Mon = 1st day
+          #7 days, 7 = Sunday, 1 = Monday, etc...
+          WEEK
+          #31 days. This is ALWAYS 31 days from the start date
+          #AND it is calculated from the start date of the scheduled function
+          MONTH
+          #ALWAYS the 1st day of the month, regardless of the start date of the scheduled function
+          MONTH_START
+          #ALWAYS the last day of the month and is therefore variable it will be 28 or 29th for February
+          #30 or 31st for other month
+          MONTH_END
+          #365 days from the start date of the scheduled function
+          YEAR
+          #ALWAYS January 1st
+          YEAR_START
+          #ALWAYS December 31st
+          YEAR_END
+        -->
+        <!--
+        intervalFrequency:
+          #Defaults to 1, this is a multiplier for the interval i.e.
+          #if this is 1 and interval is MINUTE, the function is executed once per minute
+          #if this is 2 and interval is MINUTE, the function is executed every 2 minutes
+        It can be a comma separated list:
+          #This is a comma separated list of numbers representing the frequency at which this is executed
+          #These values are a subset of the selected interval e.g.
+          #If interval is monthly then this has a possible range of 1 to 12
+          #1,2,6,12 would mean execute this function ever January, February, June and December until the end date
+          #Likewise if interval was DAY, 1 to 7 are possible
+          #1,3,7 would mean execute this function every Sunday, Tues and Saturday
+        -->
+        <!--
+        In the example below, the pipeline_billing_email.xml pipeline is executed every 3 minutes.
+        It would start and end at the given dates.
+        -->
+        <job
+                name="send_billing_email" pipeline="pipeline_billing_email.xml" enabled="true" repeats="true"
+                start="IS08601 date time" end="IS08601 date time"
+                interval="MINUTE" intervalFrequency="3"
+        />
+    </apis>
+</document>

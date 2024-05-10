@@ -1,0 +1,24 @@
+<!--
+Hypi websocket endpoints allow you to listen for events from 1 or more endpoints.
+If the endpoint subscribed to is from the built in CRUD APIs then create, update and delete events are made available.
+From your own endpoints you can use a script to emit your own event.
+
+A websocket endpoint has an event object like this:
+{
+  "table": "conversation",
+  "primary_key": {"col1": "col1 value", "col2":"col2 value"},
+  "event_time": 2345,
+  "user_id": "id of the user that triggered the event"
+  "is_insert": true,
+  "is_update": false,
+  "is_delete": false,
+}
+        -->
+<endpoint path="conversation/events" pipeline="event_pipeline.xml">
+    <!--
+        When events from any CRUD API or the create_team REST API occurs, run the event_pipeline.
+        Whatever output comes from the pipeline is emitted as a WebSocket message.
+        For example, the raw event is not very useful, but a pipeline script could use it to run a query and emit the results of the query.
+    -->
+    <websocket source="crud.*|rest.create_team"/>
+</endpoint>
