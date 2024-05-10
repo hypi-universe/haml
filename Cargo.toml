@@ -1,5 +1,5 @@
 [package]
-name = "haml"
+name = "hamlx"
 version = "0.1.0"
 edition = "2021"
 license-file = "LICENSE.md"
