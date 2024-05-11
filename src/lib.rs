@@ -1,8 +1,9 @@
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+
 // pub use haml::*;
 pub mod manifested_schema;
 pub mod haml_parser;
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
 
 #[derive(Debug, Default, Clone)]
 pub struct Location {
@@ -11,6 +12,7 @@ pub struct Location {
     pub column: u64,
     pub child_index: u64,
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum CoreApi {
     Register,
@@ -26,6 +28,7 @@ pub enum CoreApi {
     TwoFactorTotp,
     VerifyAccount,
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum DatabaseType {
     MekaDb,
@@ -84,6 +87,7 @@ pub enum ImplicitDockerStepPosition {
     Each,
     Last,
 }
+
 impl FromStr for ImplicitDockerStepPosition {
     type Err = String;
 
@@ -106,6 +110,7 @@ pub struct DockerConnectionInfo {
     pub image: String,
     pub tag: Option<String>,
 }
+
 #[derive(Debug, Clone)]
 pub enum DockerStepProvider {
     Custom { name: String, path: String },
@@ -124,9 +129,12 @@ impl FromStr for DockerStepProvider {
                 .unwrap_or("")
                 .strip_suffix("dockerfile")
                 .map(|v| DockerStepProvider::Dockerfile {
-                    path: v.to_string(),
+                    path: v.strip_prefix("/").unwrap_or(v).strip_suffix("/").unwrap_or(v).to_string(),
                 })
                 .ok_or_else(|| "Unable to parse plugin provider as a Dockerfile source".to_string())
+        } else if input.starts_with("hypi:") {
+            let input = input.strip_prefix("hypi:").unwrap();
+            Ok(DockerStepProvider::DockerImage(parse_docker_image(input)?))
         } else if input.starts_with("docker:") {
             let input = input.strip_prefix("docker:").unwrap();
             Ok(DockerStepProvider::DockerImage(parse_docker_image(input)?))
@@ -179,10 +187,59 @@ pub fn parse_docker_image(input: &str) -> std::result::Result<DockerConnectionIn
         } else {
             input.to_owned()
         },
-        tag: if let Some(v) = tag {
-            v
-        } else {
-            input.split(":").last().map(|v| v.to_owned())
-        },
+        tag:
+            if let Some(v) = tag {
+                v
+            } else {
+                if input.contains(":") {   input.split(":").last().map(|v| v.to_owned())
+                } else {
+                    None
+                }
+            }
+        ,
     })
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn can_parse_builtin_plugins() -> Result<(), String> {
+        match "hypi:form".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "form");
+                assert_eq!(info.tag, None);
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "docker:form".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "form");
+                assert_eq!(info.tag, None);
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:form:latest".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "form");
+                assert_eq!(info.tag, Some("latest".to_string()));
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:form:v123".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "form");
+                assert_eq!(info.tag, Some("v123".to_string()));
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "file:my-plugin/Dockerfile".parse()? {
+            DockerStepProvider::Dockerfile{path} => {
+                assert_eq!(path, "my-plugin");
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        Ok(())
+    }
 }
