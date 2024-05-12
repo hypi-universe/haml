@@ -116,12 +116,13 @@ pub enum DockerStepProvider {
     Custom { name: String, path: String },
     Dockerfile { path: String },
     DockerImage(DockerConnectionInfo),
+    Remote { host: String, port: Option<String> },
 }
 
 impl FromStr for DockerStepProvider {
     type Err = String;
 
-    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
         let input = input.to_lowercase();
         if input.ends_with("dockerfile") {
             input
@@ -135,6 +136,13 @@ impl FromStr for DockerStepProvider {
         } else if input.starts_with("hypi:") {
             let input = input.strip_prefix("hypi:").unwrap();
             Ok(DockerStepProvider::DockerImage(parse_docker_image(input)?))
+        } else if input.starts_with("remote:") {
+            let input = input.strip_prefix("remote:").unwrap();
+            let idx = input.find(":");
+            Ok(DockerStepProvider::Remote {
+                host: input[0..idx.unwrap_or(input.len())].to_string(),
+                port: idx.map(|idx| input[idx + 1..].to_string()),
+            })
         } else if input.starts_with("docker:") {
             let input = input.strip_prefix("docker:").unwrap();
             Ok(DockerStepProvider::DockerImage(parse_docker_image(input)?))
@@ -188,14 +196,15 @@ pub fn parse_docker_image(input: &str) -> Result<DockerConnectionInfo, String> {
             input.to_owned()
         },
         tag:
-            if let Some(v) = tag {
-                v
+        if let Some(v) = tag {
+            v
+        } else {
+            if input.contains(":") {
+                input.split(":").last().map(|v| v.to_owned())
             } else {
-                if input.contains(":") {   input.split(":").last().map(|v| v.to_owned())
-                } else {
-                    None
-                }
+                None
             }
+        }
         ,
     })
 }
@@ -274,8 +283,22 @@ mod test {
             _ => panic!("should've gotten a docker image")
         }
         match "file:my-plugin/Dockerfile".parse()? {
-            DockerStepProvider::Dockerfile{path} => {
+            DockerStepProvider::Dockerfile { path } => {
                 assert_eq!(path, "my-plugin");
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "remote:localhost:2020".parse()? {
+            DockerStepProvider::Remote { host, port } => {
+                assert_eq!(host, "localhost");
+                assert_eq!(port, Some(2020.to_string()));
+            }
+            _ => panic!("should've gotten a remote host and port")
+        }
+        match "remote:localhost".parse()? {
+            DockerStepProvider::Remote { host, port } => {
+                assert_eq!(host, "localhost");
+                assert_eq!(port, None);
             }
             _ => panic!("should've gotten a docker image")
         }
