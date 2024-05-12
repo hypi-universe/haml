@@ -153,7 +153,7 @@ impl FromStr for DockerStepProvider {
     }
 }
 
-pub fn parse_docker_image(input: &str) -> std::result::Result<DockerConnectionInfo, String> {
+pub fn parse_docker_image(input: &str) -> Result<DockerConnectionInfo, String> {
     let (username, pass, image, tag) = if input.contains("@") {
         let mut parts = input.split("@");
         let user_and_pass = parts
@@ -210,6 +210,45 @@ mod test {
             DockerStepProvider::DockerImage(info) => {
                 assert_eq!(info.image, "form");
                 assert_eq!(info.tag, None);
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:hypi/rapid-plugin-form".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "hypi/rapid-plugin-form");
+                assert_eq!(info.tag, None);
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:repo.hypi.ai/rapid-plugin-form".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "repo.hypi.ai/rapid-plugin-form");
+                assert_eq!(info.tag, None);
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:repo.hypi.ai/rapid-plugin-form:v2".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "repo.hypi.ai/rapid-plugin-form");
+                assert_eq!(info.tag, Some("v2".to_string()));
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:user2:pass2@repo.hypi.ai/rapid-plugin-form:v2".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "repo.hypi.ai/rapid-plugin-form");
+                assert_eq!(info.tag, Some("v2".to_string()));
+                assert_eq!(info.username, Some("user2".to_string()));
+                assert_eq!(info.password, Some("pass2".to_string()));
+            }
+            _ => panic!("should've gotten a docker image")
+        }
+        match "hypi:user3:pass3@hypi/rapid-plugin-form:v3".parse()? {
+            DockerStepProvider::DockerImage(info) => {
+                assert_eq!(info.image, "hypi/rapid-plugin-form");
+                assert_eq!(info.tag, Some("v3".to_string()));
+                assert_eq!(info.username, Some("user3".to_string()));
+                assert_eq!(info.password, Some("pass3".to_string()));
             }
             _ => panic!("should've gotten a docker image")
         }

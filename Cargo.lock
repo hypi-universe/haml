@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "hamlx"
-version = "0.1.3"
+version = "0.1.5"
 dependencies = [
  "http 1.1.0",
  "lazy_static",
@@ -1147,9 +1147,9 @@ dependencies = [
 
 [[package]]
 name = "rapid-utils"
-version = "0.1.2"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d96301a57e2e58c526e45607229a53b284a869c760c6846777906a93cab5c614"
+checksum = "d665fbbe6632d8da2dc89930df482726a743c1da68619d3b1d58f48504fb7351"
 dependencies = [
  "bollard",
  "bytes",
