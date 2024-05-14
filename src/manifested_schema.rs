@@ -16,7 +16,6 @@ pub struct DocumentDef {
     pub graphql: Option<GraphQLApiDef>,
     pub jobs: Vec<JobDef>,
     pub databases: Vec<DatabaseDef>,
-    pub pipelines: Vec<Pipeline>,
     pub env: Vec<EnvVar>,
     pub step_builders: Vec<DockerConnectionInfo>,
     pub meta: MetaDef,
@@ -38,10 +37,6 @@ impl From<&ParsedDocument> for DocumentDef {
                 .as_ref()
                 .map(|v| (&*v.borrow()).core_apis.clone())
                 .unwrap_or_else(|| vec![]),
-            pipelines: (&*apis.pipelines.borrow())
-                .iter()
-                .map(|v| (&*v.borrow()).into())
-                .collect(),
             rest: apis.rest.as_ref().map(|v| (&*v.borrow()).into()),
             graphql: apis.graphql.as_ref().map(|v| (&*v.borrow()).into()),
             jobs: (&*apis.jobs.borrow())
@@ -194,7 +189,7 @@ pub struct EndpointDef {
     pub accepts: Option<String>,
     pub produces: Option<String>,
     ///The name of the pipeline which is executed when this endpoint is called
-    pub pipeline: Option<String>,
+    pub pipeline: Pipeline,
     pub responses: Vec<ResponseDef>,
 }
 
@@ -209,7 +204,7 @@ impl From<&ParsedEndpoint> for EndpointDef {
             public: value.public.clone(),
             accepts: value.accepts.clone(),
             produces: value.produces.clone(),
-            pipeline: value.pipeline.clone(),
+            pipeline: (&*value.pipeline.borrow()).into(),
             responses: value
                 .responses
                 .iter()

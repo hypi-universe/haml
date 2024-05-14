@@ -6,6 +6,10 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use lazy_static::lazy_static;
+use rapid_fs::vfs::BoundVfs;
+use rapid_fs::vfs::Vfs;
+use rapid_utils::err::{ErrorCode, HttpError};
+use rapid_utils::http_utils::HttpMethod;
 use thiserror::Error;
 use xml::attribute::OwnedAttribute;
 use xml::common::{Position, TextPosition};
@@ -14,13 +18,9 @@ use xml::name::OwnedName;
 use xml::reader::{ErrorKind, XmlEvent};
 
 use crate::{ConstraintViolationAction, CoreApi, DatabaseType, DockerConnectionInfo, DockerStepProvider, ImplicitDockerStepPosition, Location, parse_docker_image, TableConstraintType};
-use rapid_utils::http_utils::HttpMethod;
-use rapid_fs::vfs::Vfs;
-use rapid_fs::vfs::BoundVfs;
-use rapid_utils::err::{ErrorCode, HttpError};
 
 pub type Result<T> = std::result::Result<T, HamlError>;
-lazy_static!{
+lazy_static! {
 static ref HAML_CODE_UNKNOWN_ATTR: ErrorCode =
     ErrorCode::new("haml_unknown_attr", http::status::StatusCode::BAD_REQUEST);
 static ref HAML_CODE_INVALID_PROVIDER: ErrorCode = ErrorCode::new(
@@ -229,8 +229,10 @@ impl Display for ParseErr {
 }
 
 pub struct ParsedTablePtr(NodePtr<ParsedTable>);
+
 //we know we only read from ParsedTablePtr so it is safe to send between threads
 unsafe impl Sync for ParsedTablePtr {}
+
 unsafe impl Send for ParsedTablePtr {}
 
 impl Deref for ParsedTablePtr {
@@ -242,8 +244,10 @@ impl Deref for ParsedTablePtr {
 }
 
 pub struct ParsedSchemaPtr(NodePtr<ParsedTable>);
+
 //we know we only read from SchemaPtr so it is safe to send between threads
 unsafe impl Sync for ParsedSchemaPtr {}
+
 unsafe impl Send for ParsedSchemaPtr {}
 
 impl Deref for ParsedSchemaPtr {
@@ -253,6 +257,7 @@ impl Deref for ParsedSchemaPtr {
         &self.0
     }
 }
+
 pub enum ParsedHypiSchemaElement {
     ParsedDocument(NodePtr<ParsedDocument>),
     ParsedTables(NodePtr<ParsedTables>),
@@ -285,8 +290,8 @@ pub enum ParsedHypiSchemaElement {
 
 impl ParsedHypiSchemaElement {
     pub fn set_attr<F>(&mut self, ctx: &ParseCtx<F>, key: String, value: String) -> Result<()>
-    where
-        F: Vfs,
+        where
+            F: Vfs,
     {
         match self {
             ParsedHypiSchemaElement::ParsedDocument(node) => {
@@ -355,8 +360,8 @@ impl ParsedHypiSchemaElement {
         ctx: &ParseCtx<F>,
         child: NodePtr<ParsedHypiSchemaElement>,
     ) -> Result<()>
-    where
-        F: Vfs,
+        where
+            F: Vfs,
     {
         match self {
             ParsedHypiSchemaElement::ParsedDocument(node) => {
@@ -414,8 +419,8 @@ impl ParsedHypiSchemaElement {
         }
     }
     pub fn set_str_body<F>(&mut self, ctx: &ParseCtx<F>, value: String) -> Result<()>
-    where
-        F: Vfs,
+        where
+            F: Vfs,
     {
         match self {
             ParsedHypiSchemaElement::ParsedDocument(node) => {
@@ -473,8 +478,8 @@ impl ParsedHypiSchemaElement {
         }
     }
     pub fn validate<F>(&mut self, ctx: &ParseCtx<F>) -> Result<()>
-    where
-        F: Vfs,
+        where
+            F: Vfs,
     {
         match self {
             ParsedHypiSchemaElement::ParsedDocument(node) => node.borrow_mut().validate(ctx),
@@ -860,8 +865,8 @@ impl ParsedHypiSchemaElement {
 }
 
 pub trait HypiSchemaNode<F>
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, _ctx: &ParseCtx<F>, _name: String, _value: String) -> Result<()> {
         Ok(())
@@ -886,8 +891,8 @@ pub fn new_node<F>(
     ctx: &ParseCtx<F>,
     name: &str,
 ) -> Result<ParsedHypiSchemaElement>
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     let parent_name = parent.map(|v| v.borrow().name().to_owned());
     match name {
@@ -1157,8 +1162,8 @@ pub struct ParsedDocument {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedDocument
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, _value: String) -> Result<()> {
         Err(HamlError::ParseErr(ParseErr {
@@ -1213,8 +1218,8 @@ where
 }
 
 pub struct ParseCtx<F>
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     file_name: String,
     line_number: u64,
@@ -1226,8 +1231,8 @@ where
 }
 
 impl<F> ParseCtx<F>
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn new(
         file_name: String,
@@ -1257,8 +1262,8 @@ impl ParsedDocument {
         file_name: String,
         fs: Arc<BoundVfs<F>>,
     ) -> Result<NodePtr<ParsedHypiSchemaElement>>
-    where
-        F: Vfs,
+        where
+            F: Vfs,
     {
         let xml = match fs.read_schema_file(file_name.as_str()) {
             Ok(val) => val,
@@ -1281,8 +1286,8 @@ impl ParsedDocument {
             let e = parser.next();
             match e {
                 Ok(XmlEvent::StartElement {
-                    name, attributes, ..
-                }) => {
+                       name, attributes, ..
+                   }) => {
                     child_index.push(child_index.len() as u64);
                     let mut ctx =
                         ParseCtx::new(file_name.clone(), parser.position(), fs.clone(), attributes);
@@ -1413,8 +1418,8 @@ pub struct ParsedTable {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedTable
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -1516,8 +1521,8 @@ where
 }
 
 fn parse_column_type<F>(ctx: &ParseCtx<F>, value: &String) -> Result<ColumnType>
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     Ok(match value.to_lowercase().as_str() {
         COL_TYPE_TEXT => ColumnType::TEXT,
@@ -1572,8 +1577,8 @@ pub struct ParsedColumn {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedColumn
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
@@ -1674,8 +1679,8 @@ pub struct ParsedColumnPipeline {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedColumnPipeline
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, _value: String) -> Result<()> {
         Err(HamlError::ParseErr(ParseErr {
@@ -1765,8 +1770,8 @@ pub struct ParsedColumnPipelineArgs {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedColumnPipelineArgs
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
@@ -1809,8 +1814,8 @@ pub struct ParsedColumnPipelineWrite {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedColumnPipelineWrite
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
@@ -1853,8 +1858,8 @@ pub struct ParsedColumnPipelineRead {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedColumnPipelineRead
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
@@ -1901,8 +1906,8 @@ pub struct ParsedDockerStep {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedDockerStep
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
@@ -1992,13 +1997,13 @@ where
 }
 
 impl<F> HypiSchemaNode<F> for DockerConnectionInfo
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
             ATTR_IMAGE => {
-                let info=parse_docker_image(value.as_str()).map_err(|e| {
+                let info = parse_docker_image(value.as_str()).map_err(|e| {
                     HamlError::ParseErr(ParseErr {
                         file: ctx.file_name.clone(),
                         line: ctx.line_number.clone(),
@@ -2008,11 +2013,11 @@ where
                         message: format!("Invalid 'before' value. {}. Supported values are first OR each OR last", e),
                     })
                 })?;
-                let old=std::mem::replace(self,info);
-                self.start_pos=old.start_pos;
-                self.end_pos=old.end_pos;
+                let old = std::mem::replace(self, info);
+                self.start_pos = old.start_pos;
+                self.end_pos = old.end_pos;
                 Ok(())
-            } 
+            }
             name => Err(HamlError::ParseErr(ParseErr {
                 file: ctx.file_name.clone(),
                 line: ctx.line_number.clone(),
@@ -2033,7 +2038,6 @@ where
         node: NodePtr<ParsedHypiSchemaElement>,
     ) -> Result<()> {
         match &*(*node).borrow() {
-            
             el => Err(HamlError::ParseErr(ParseErr {
                 file: ctx.file_name.clone(),
                 line: ctx.line_number.clone(),
@@ -2052,8 +2056,8 @@ where
 pub type ParsedCoreApiName = String;
 
 impl<F> HypiSchemaNode<F> for ParsedCoreApiName
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.to_lowercase().as_str() {
@@ -2100,8 +2104,8 @@ pub struct ParsedGlobalOptions {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedGlobalOptions
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.to_lowercase().as_str() {
@@ -2188,8 +2192,8 @@ pub struct ParsedApis {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedApis
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, _value: String) -> Result<()> {
         return match name.as_str() {
@@ -2248,8 +2252,8 @@ where
 }
 
 impl<F> HypiSchemaNode<F> for ParsedTables
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, _value: String) -> Result<()> {
         Err(HamlError::ParseErr(ParseErr {
@@ -2304,8 +2308,8 @@ pub struct ParsedHypi {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedHypi
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.as_str() {
@@ -2379,8 +2383,8 @@ pub struct ParsedMapping {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedMapping
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.to_lowercase().as_str() {
@@ -2444,8 +2448,8 @@ pub struct ParsedRest {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedRest
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.to_lowercase().as_str() {
@@ -2503,13 +2507,14 @@ pub struct ParsedEndpoint {
     pub accepts: Option<String>,
     pub produces: Option<String>,
     ///The name of the pipeline which is executed when this endpoint is called
-    pub pipeline: Option<String>,
+    pub pipeline: NodePtr<ParsedPipeline>,
+    pub pipeline_provided: bool,
     pub responses: Vec<NodePtr<ParsedEndpointResponse>>,
 }
 
 impl<F> HypiSchemaNode<F> for ParsedEndpoint
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -2550,8 +2555,28 @@ where
                 Ok(())
             }
             ATTR_PIPELINE => {
-                self.pipeline = Some(value);
-                Ok(())
+                self.pipeline_provided = true;
+                match ParsedDocument::from_str(value.clone(), ctx.fs.clone()) {
+                    Ok(node) => {
+                        match &*(&*node).borrow() {
+                            ParsedHypiSchemaElement::Pipeline(pipeline) => {
+                                self.pipeline = pipeline.clone();
+                                Ok(())
+                            }
+                            _ => {
+                                Err(HamlError::ParseErr(ParseErr {
+                                    file: ctx.file_name.clone(),
+                                    line: ctx.line_number.clone(),
+                                    column: ctx.column.clone(),
+                                    code: HAML_CODE_MISSING_IMPORT.clone(),
+                                    element: EL_ENDPOINT.to_owned(),
+                                    message: format!("Pipeline file '{}' found but it does not container a pipeline object as expected", value),
+                                }))
+                            }
+                        }
+                    }
+                    Err(err) => Err(err),
+                }
             }
             ATTR_METHOD => {
                 self.method = HttpMethod::from(&value).ok_or(HamlError::ParseErr(ParseErr {
@@ -2628,7 +2653,22 @@ where
             })),
         }
     }
+
+    fn validate(&mut self, ctx: &ParseCtx<F>) -> Result<()> {
+        if !self.pipeline_provided {
+            return Err(HamlError::ParseErr(ParseErr {
+                file: ctx.file_name.clone(),
+                line: ctx.line_number.clone(),
+                column: ctx.column.clone(),
+                code: HAML_CODE_UNSUPPORTED_CHILD.clone(),
+                element: EL_ENDPOINT.to_owned(),
+                message: "The endpoint element MUST provide a valid pipeline.".to_string(),
+            }));
+        }
+        Ok(())
+    }
 }
+
 #[derive(Debug)]
 pub struct ParsedEndpointResponse {
     pub start_pos: Location,
@@ -2642,8 +2682,8 @@ pub struct ParsedEndpointResponse {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedEndpointResponse
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_str_body(&mut self, _ctx: &ParseCtx<F>, value: String) -> Result<()> {
         self.body = Some(value);
@@ -2726,8 +2766,8 @@ pub struct ParsedGraphQL {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedGraphQL
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.to_lowercase().as_str() {
@@ -2792,8 +2832,8 @@ pub struct ParsedJob {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedJob
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         match name.to_lowercase().as_str() {
@@ -2860,7 +2900,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ParsedPipeline {
     pub start_pos: Location,
     pub end_pos: Location,
@@ -2871,8 +2911,8 @@ pub struct ParsedPipeline {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedPipeline
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -2978,8 +3018,8 @@ pub struct ParsedMeta {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedMeta
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, _value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -3032,8 +3072,8 @@ pub struct ParsedKeyValuePair {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedKeyValuePair
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -3091,8 +3131,8 @@ pub struct ParsedSchema {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedSchema
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -3159,8 +3199,8 @@ pub struct ParsedConstraint {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedConstraint
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -3176,8 +3216,8 @@ where
             }
             ATTR_ON_DELETE => {
                 let action = match value.to_lowercase().as_str() {
-                    "cascade" => {ConstraintViolationAction::Cascade}
-                    "restrict" => {ConstraintViolationAction::Restrict}
+                    "cascade" => { ConstraintViolationAction::Cascade }
+                    "restrict" => { ConstraintViolationAction::Restrict }
                     _ => return Err(HamlError::ParseErr(ParseErr {
                         file: ctx.file_name.clone(),
                         line: ctx.line_number.clone(),
@@ -3204,8 +3244,8 @@ where
             }
             ATTR_ON_UPDATE => {
                 let action = match value.to_lowercase().as_str() {
-                    "cascade" => {ConstraintViolationAction::Cascade}
-                    "restrict" => {ConstraintViolationAction::Restrict}
+                    "cascade" => { ConstraintViolationAction::Cascade }
+                    "restrict" => { ConstraintViolationAction::Restrict }
                     _ => return Err(HamlError::ParseErr(ParseErr {
                         file: ctx.file_name.clone(),
                         line: ctx.line_number.clone(),
@@ -3293,6 +3333,7 @@ where
         Ok(())
     }
 }
+
 #[derive(Debug)]
 pub struct ParsedDb {
     pub start_pos: Location,
@@ -3309,8 +3350,8 @@ pub struct ParsedDb {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedDb
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
@@ -3425,8 +3466,8 @@ pub struct ParsedEnv {
 }
 
 impl<F> HypiSchemaNode<F> for ParsedEnv
-where
-    F: Vfs,
+    where
+        F: Vfs,
 {
     fn set_attr(&mut self, ctx: &ParseCtx<F>, name: String, value: String) -> Result<()> {
         let attr_name = name.to_lowercase();
