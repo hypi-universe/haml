@@ -1,6 +1,6 @@
 [package]
 name = "hamlx"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 license-file = "LICENSE.md"
 description = "Hypi Application Markup Language"
@@ -13,7 +13,7 @@ readme = "README.md"
 categories = ["web-programming"]
 
 [dependencies]
-rapid-utils = { version = "0.1.9", path = "../rapid-utils" }
+rapid-utils = { version = "0.1.10", path = "../rapid-utils" }
 rapid-fs = { version = "0.1.1", path = "../rapid-fs" }
 lazy_static = "1.4.0"
 thiserror = "1.0.60"
