@@ -469,12 +469,12 @@ dependencies = [
 
 [[package]]
 name = "hamlx"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "http 1.1.0",
  "lazy_static",
  "log",
- "rapid-fs",
+ "rapid-fs 0.1.1",
  "rapid-utils",
  "thiserror",
  "xml",
@@ -1144,8 +1144,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rapid-fs"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6a4af859ae3752adef384662ae1cce4e128fcf2b7bcdf7287e1bce2e07b447e"
+dependencies = [
+ "bytes",
+ "log",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "rapid-utils"
-version = "0.1.10"
+version = "0.1.11"
 dependencies = [
  "bollard",
  "bytes",
@@ -1154,7 +1167,7 @@ dependencies = [
  "lazy_static",
  "log",
  "prost",
- "rapid-fs",
+ "rapid-fs 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest",
  "serde",
  "serde_json",
